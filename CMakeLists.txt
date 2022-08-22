@@ -16,6 +16,10 @@ find_package(QT NAMES Qt5 COMPONENTS Widgets REQUIRED)
 find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Widgets REQUIRED)
 
 set(PROJECT_SOURCES
+        colorMap.cpp
+        colorMap.h
+        colorMapPresets.cpp
+        colorMapPresets.h
         main.cpp
         mainwindow.cpp
         mainwindow.h

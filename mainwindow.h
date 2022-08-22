@@ -1,7 +1,11 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
+#include <QLineF>
 #include <QMainWindow>
+#include <QPolygonF>
+
+#include "colorMapPresets.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -14,10 +18,17 @@ class MainWindow : public QMainWindow
 public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
-	
-// TODO : override onPaint
+
+    void paintEvent(QPaintEvent* event) override;
+
 
 private:
-    Ui::MainWindow *ui;
+    Ui::MainWindow* _ui;
+
+    QVector<double> _data;
+    QPolygonF _points;
+    QVector<QLineF> _lines;
+
+    LinearColorMap _colorMap;
 };
 #endif // MAINWINDOW_H
