@@ -26,7 +26,11 @@ private:
     Ui::MainWindow* _ui;
 
     QVector<double> _data;
+    double _minData;
+    double _maxData;
+
     QPolygonF _points;
+    QPolygonF _extendedPoints;
     QVector<QLineF> _lines;
 
     LinearColorMap _colorMap;

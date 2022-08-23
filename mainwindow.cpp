@@ -1,7 +1,9 @@
 #include "mainwindow.h"
 #include "./ui_mainwindow.h"
 
+#include <algorithm>
 #include <cmath>
+#include <numeric>
 
 #include <QPaintEvent>
 #include <QPainter>
@@ -21,12 +23,27 @@ MainWindow::MainWindow(QWidget *parent)
 {
     _ui->setupUi(this);
 
-    _data.resize(64);
-    std::generate(_data.begin(), _data.end(), [] { return (std::rand() % 256); });
+    _data.resize(32);
+    //std::srand(time(NULL));
+    //std::generate(_data.begin(), _data.end(), [] { return (std::rand() % 256); });
+    //_minData = *std::min_element(_data.begin(), _data.end());
+    //_maxData = *std::max_element(_data.begin(), _data.end());
+    
+    std::iota(_data.begin(), _data.end(), 1);
+    _minData = 1;
+    _maxData = 32;
 
     _colorMap = ColorMapPresets::controlPointsToLinearColorMap(ColorMapPresets::Jet());
 
+    _points.push_back(QPointF(20, 30));
+    _points.push_back(QPointF(45, 40));
+    _points.push_back(QPointF(100, 100));
+    _points.push_back(QPointF(200, 150));
+    _points.push_back(QPointF(150, 300));
+    _points.push_back(QPointF(50, 350));
 
+    createNewPointsAndLinesForData(_points, _data.size(), _extendedPoints, _lines);
+    Q_ASSERT(_lines.size() <= _data.size()); // createNewPointsAndLinesForData has bugs
 }
 
 MainWindow::~MainWindow()
@@ -36,24 +53,55 @@ MainWindow::~MainWindow()
 
 void MainWindow::paintEvent(QPaintEvent* event)
 {
-    QPainter txtPainter(this);
-    txtPainter.drawText(QPoint(20, 30), "Test");
-    //painter.setPen(QPen(Qt::black, 12, Qt::DashDotLine, Qt::RoundCap));
-    //painter.drawLine(0, 0, 200, 200);
+    //setAttribute(Qt::WA_OpaquePaintEvent);
 
-    /*QColor c;
-    c.setRgba(mInternals->ColorMap.rgb(Min, Max, value));
-    pmPainter.setPen(c);
-    pmPainter.drawLine(x, paintRect.top(), x, paintRect.bottom());*/
+    QPen redPen(Qt::red);
+    redPen.setCapStyle(Qt::RoundCap);
+    redPen.setWidth(5);
 
-    /*setAttribute(Qt::WA_OpaquePaintEvent);
+    QPen greenPen(Qt::darkGreen);
+    greenPen.setCapStyle(Qt::RoundCap);
+    greenPen.setWidth(5);
+
+    QPen bluePen(Qt::blue);
+    bluePen.setCapStyle(Qt::RoundCap);
+    bluePen.setWidth(5);
+
     QPainter painter(this);
-    QPen linepen(Qt::red);
-    linepen.setCapStyle(Qt::RoundCap);
-    linepen.setWidth(30);
     painter.setRenderHint(QPainter::Antialiasing, true);
-    painter.setPen(linepen);
-    painter.drawPoint(point);*/
+    painter.drawText(QPoint(15, 20), "Original points set");
+
+    painter.setPen(redPen);
+    for (const auto& pt : _points)
+    {
+        painter.drawPoint(pt);
+    }
+
+    painter.setPen(greenPen);
+    painter.translate(250, 0);
+    painter.drawText(QPoint(15, 20), "Extended points set");
+    for (const auto& pt : _extendedPoints)
+    {
+        painter.drawPoint(pt);
+    }
+
+    painter.setPen(bluePen);
+    painter.translate(250, 0);
+    painter.drawText(QPoint(15, 20), "Coloring lines demo");
+    
+    for (int lineIdx = 0; lineIdx < _lines.size(); ++lineIdx)
+    {
+        QColor dataColor;
+        dataColor.setRgba(_colorMap.rgb(_minData, _maxData, _data[lineIdx]));
+
+        QPen dataPen;
+        dataPen.setColor(dataColor);
+        dataPen.setCapStyle(Qt::RoundCap);
+        //dataPen.setStyle(Qt::SolidLine);
+        dataPen.setWidth(5);
+        painter.setPen(dataPen);
+        painter.drawLine(_lines[lineIdx]);
+    }
 }
 
 double linesLengthBetween2Points(const QPolygonF& pointsSet, const int p1, const int p2)
@@ -84,6 +132,8 @@ double linesLengthBetween2Points(const QPolygonF& pointsSet, const int p1, const
     return length;
 }
 
+// I think it's better to rewrite this function using the a finite-state machine.
+// NB: inputPoints mustn't contain identical consecutive points
 void createNewPointsAndLinesForData(const QPolygonF& inputPoints, const int dataCount, 
     QPolygonF& outputPoints, QVector<QLineF>& outputLines)
 {
@@ -113,6 +163,8 @@ void createNewPointsAndLinesForData(const QPolygonF& inputPoints, const int data
     const double inputPointsLinesLength = linesLengthBetween2Points(inputPoints, 0, inputPoints.size() - 1);
     const double step = inputPointsLinesLength / dataCount;
 
+    // if pointA and pointB are the same, we will have funny values in cosine in sine
+    // even better : don't feed this function an inputPoints which can have identical consecutive points
     double lengthAB = QLineF(pointA, pointB).length();
     double cosine = (pointB.x() - pointA.x()) / lengthAB;
     double sine = (pointB.y() - pointA.y()) / lengthAB;
@@ -144,17 +196,20 @@ void createNewPointsAndLinesForData(const QPolygonF& inputPoints, const int data
                 }
                 else
                 {
+                    // doesn't occur in this demo.
                     pointA = inputPoints[lastInputPointsIndex];
-                    pointB = point2;
+                    pointB = point2; // Hummm....
 
                     ++inputPointsIndexB; // increment inputPointsIndexB so we can exit the loop
-                }                
+                }
 
-                lengthAB = QVector2D::dotProduct(QVector2D(pointA), QVector2D(pointB));
-                if (lengthAB == 0)
+                lengthAB = QLineF(pointA, pointB).length();
+                
+                // Keep it commented as long as inputPoints doesn't have identical consecutive points
+                /*if (lengthAB == 0.)
                 {
                     continue;
-                }
+                }*/
 
                 cosine = (pointB.x() - pointA.x()) / lengthAB;
                 sine = (pointB.y() - pointA.y()) / lengthAB;
@@ -167,13 +222,27 @@ void createNewPointsAndLinesForData(const QPolygonF& inputPoints, const int data
             }
             if (inputPointsIndexB >= lastInputPointsIndex)
             {
+                // not a good solution :
                 outputPoints.push_back(inputPoints.back());
+
+                // there will be missing points in some cases... why ?
 
                 break; // no more input points, break the for loop
             }
-            else
+            
+            outputPoints.push_back(point2);
+
+            // what if dotProduct is equal to zero ? we need to update 'cosine' and 'sine' values
+            if (dotProduct == 0.)
             {
-                outputPoints.push_back(point2);
+                // This is correct as long as inputPoints doesn't have identical consecutive points
+                ++inputPointsIndexA;
+                ++inputPointsIndexB;
+                pointA = inputPoints[inputPointsIndexA];
+                pointB = inputPoints[inputPointsIndexB];
+                lengthAB = QLineF(pointA, pointB).length();
+                cosine = (pointB.x() - pointA.x()) / lengthAB;
+                sine = (pointB.y() - pointA.y()) / lengthAB;
             }
         }
         else
