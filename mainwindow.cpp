@@ -220,7 +220,7 @@ void createNewPointsAndLinesForData(const QPolygonF& inputPoints, const int data
                 const QVector2D BP2{ QPointF { point2.x() - pointB.x(), point2.y() - pointB.y() } };
                 dotProduct = QVector2D::dotProduct(BP2, AB);
             }
-            if (inputPointsIndexB >= lastInputPointsIndex)
+            if (inputPointsIndexB >/*=*/ lastInputPointsIndex)
             {
                 // not a good solution :
                 outputPoints.push_back(inputPoints.back());
