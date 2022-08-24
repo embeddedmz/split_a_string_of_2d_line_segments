@@ -220,7 +220,7 @@ void createNewPointsAndLinesForData(const QPolygonF& inputPoints, const int data
                 const QVector2D BP2{ QPointF { point2.x() - pointB.x(), point2.y() - pointB.y() } };
                 dotProduct = QVector2D::dotProduct(BP2, AB);
             }
-            if (inputPointsIndexB >/*=*/ lastInputPointsIndex)
+            if (inputPointsIndexB > lastInputPointsIndex)
             {
                 // not a good solution :
                 outputPoints.push_back(inputPoints.back());
@@ -233,7 +233,7 @@ void createNewPointsAndLinesForData(const QPolygonF& inputPoints, const int data
             outputPoints.push_back(point2);
 
             // what if dotProduct is equal to zero ? we need to update 'cosine' and 'sine' values
-            if (dotProduct == 0.)
+            if (dotProduct == 0. && inputPointsIndexB < lastInputPointsIndex)
             {
                 // This is correct as long as inputPoints doesn't have identical consecutive points
                 ++inputPointsIndexA;
