@@ -196,7 +196,6 @@ void createNewPointsAndLinesForData(const QPolygonF& inputPoints, const int data
                 }
                 else
                 {
-                    // doesn't occur in this demo.
                     pointA = inputPoints[lastInputPointsIndex];
                     pointB = point2; // Hummm....
 
