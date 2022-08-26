@@ -14,6 +14,50 @@ void createNewPointsAndLinesForData(const QPolygonF& inputPoints,
     const int dataCount,
     QPolygonF& outputPoints,
     QVector<QLineF>& outputLines);
+void lightxbulbCode(const QPolygonF& inputPoints,
+    const int dataCount,
+    QPolygonF& outputPoints,
+    QVector<QLineF>& outputLines);
+
+void lightxbulbCode(const QPolygonF& inputPoints,
+    const int dataCount,
+    QPolygonF& outputPoints,
+    QVector<QLineF>& outputLines)
+{
+    outputPoints.resize(dataCount + 1);
+
+    /* cumulative distances */
+    QVector<float> dists(inputPoints.size());
+    dists[0] = 0;
+    for (int i = 1; i < inputPoints.size(); ++i)
+        dists[i] = dists[i - 1] + QLineF(inputPoints[i], inputPoints[i - 1]).length();
+
+    /* step size */
+    float step = dists.back() / (dataCount - 1);
+    outputPoints[0] = inputPoints[0];
+    float total_dist = 0;
+    int segment_idx = 1;
+    for (int i = 1; i < outputPoints.size(); ++i)
+    {
+        total_dist = total_dist + step;
+        while (total_dist > dists[segment_idx])
+        {
+            ++segment_idx;
+            if (segment_idx == inputPoints.size())
+                goto end;
+        }
+        float t = (total_dist - dists[segment_idx - 1]) / (dists[segment_idx] - dists[segment_idx - 1]);
+        outputPoints[i] = (1 - t) * inputPoints[segment_idx - 1] + t * inputPoints[segment_idx];
+    }
+end:
+    outputPoints.back() = inputPoints.back();
+
+createLines:
+    for (int i = 0; i < outputPoints.size() - 1; i++)
+    {
+        outputLines.push_back(QLineF(outputPoints[i], outputPoints[i + 1]));
+    }
+}
 
 double linesLengthBetween2Points(const QPolygonF& pointsSet, const int p1, const int p2);
 
@@ -43,7 +87,11 @@ MainWindow::MainWindow(QWidget *parent)
     _points.push_back(QPointF(50, 350));
 
     createNewPointsAndLinesForData(_points, _data.size(), _extendedPoints, _lines);
-    Q_ASSERT(_lines.size() <= _data.size()); // createNewPointsAndLinesForData has bugs
+    Q_ASSERT(_lines.size() == _data.size());
+
+    lightxbulbCode(_points, _data.size(),
+        _extendedPointsArcLengthParametrization, _linesArcLengthParametrization);
+    Q_ASSERT(_linesArcLengthParametrization.size() == _data.size());
 }
 
 MainWindow::~MainWindow()
@@ -54,6 +102,10 @@ MainWindow::~MainWindow()
 void MainWindow::paintEvent(QPaintEvent* event)
 {
     //setAttribute(Qt::WA_OpaquePaintEvent);
+
+    QPen blackPen(Qt::black);
+    blackPen.setCapStyle(Qt::RoundCap);
+    blackPen.setWidth(5);
 
     QPen redPen(Qt::red);
     redPen.setCapStyle(Qt::RoundCap);
@@ -69,7 +121,7 @@ void MainWindow::paintEvent(QPaintEvent* event)
 
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing, true);
-    painter.drawText(QPoint(15, 20), "Original points set");
+    painter.drawText(QPoint(15, 20), "Original points set + lightxbulb code");
 
     painter.setPen(redPen);
     for (const auto& pt : _points)
@@ -77,8 +129,14 @@ void MainWindow::paintEvent(QPaintEvent* event)
         painter.drawPoint(pt);
     }
 
+    painter.setPen(blackPen);
+    for (const auto& pt : _extendedPointsArcLengthParametrization)
+    {
+        painter.drawPoint(pt);
+    }
+
     painter.setPen(greenPen);
-    painter.translate(250, 0);
+    //painter.translate(250, 0);
     painter.drawText(QPoint(15, 20), "Extended points set");
     for (const auto& pt : _extendedPoints)
     {

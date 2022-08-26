@@ -33,6 +33,9 @@ private:
     QPolygonF _extendedPoints;
     QVector<QLineF> _lines;
 
+    QPolygonF _extendedPointsArcLengthParametrization;
+    QVector<QLineF> _linesArcLengthParametrization;
+
     LinearColorMap _colorMap;
 };
 #endif // MAINWINDOW_H
