@@ -37,7 +37,8 @@ void lightxbulbCode(const QPolygonF& inputPoints,
     outputPoints[0] = inputPoints[0];
     float total_dist = 0;
     int segment_idx = 1;
-    for (int i = 1; i < outputPoints.size(); ++i)
+    int i;
+    for (i = 1; i < outputPoints.size(); ++i)
     {
         total_dist = total_dist + step;
         while (total_dist > dists[segment_idx])
@@ -50,7 +51,18 @@ void lightxbulbCode(const QPolygonF& inputPoints,
         outputPoints[i] = (1 - t) * inputPoints[segment_idx - 1] + t * inputPoints[segment_idx];
     }
 end:
-    outputPoints.back() = inputPoints.back();
+    if (i < outputPoints.size())
+    {
+        outputPoints[i++] = inputPoints.back();
+        segment_idx = inputPoints.size() - 1;
+        while (i < outputPoints.size())
+        {
+            total_dist = total_dist + step;            
+            float t = (total_dist - dists[segment_idx - 1]) / (dists[segment_idx] - dists[segment_idx - 1]);
+            outputPoints[i] = (1 - t) * inputPoints.back() + t * inputPoints.back();
+            i += 1;
+        }
+    }
 
 createLines:
     for (int i = 0; i < outputPoints.size() - 1; i++)
@@ -141,6 +153,24 @@ void MainWindow::paintEvent(QPaintEvent* event)
     for (const auto& pt : _extendedPoints)
     {
         painter.drawPoint(pt);
+    }
+
+    painter.setPen(bluePen);
+    painter.translate(250, 0);
+    painter.drawText(QPoint(15, 20), "Coloring lines demo (lightxbulb)");
+
+    for (int lineIdx = 0; lineIdx < _linesArcLengthParametrization.size(); ++lineIdx)
+    {
+        QColor dataColor;
+        dataColor.setRgba(_colorMap.rgb(_minData, _maxData, _data[lineIdx]));
+
+        QPen dataPen;
+        dataPen.setColor(dataColor);
+        dataPen.setCapStyle(Qt::RoundCap);
+        //dataPen.setStyle(Qt::SolidLine);
+        dataPen.setWidth(5);
+        painter.setPen(dataPen);
+        painter.drawLine(_linesArcLengthParametrization[lineIdx]);
     }
 
     painter.setPen(bluePen);
